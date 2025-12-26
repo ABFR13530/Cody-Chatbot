@@ -1,27 +1,5 @@
-# Configuration Netlify pour Cody Chatbot
-# Ce fichier configure le déploiement et les fonctions serverless
-
 [build]
-  # Pas de build nécessaire (HTML statique)
-  publish = "."
-  
+  functions = "functions"
+
 [functions]
-  # Dossier contenant les fonctions serverless
-  directory = "functions"
-  # Utilise le bundler moderne
   node_bundler = "esbuild"
-
-# Headers de sécurité
-[[headers]]
-  for = "/*"
-  [headers.values]
-    X-Frame-Options = "DENY"
-    X-Content-Type-Options = "nosniff"
-    Referrer-Policy = "strict-origin-when-cross-origin"
-    Permissions-Policy = "geolocation=(), microphone=(), camera=()"
-
-# Redirection des erreurs 404 vers la page d'accueil
-[[redirects]]
-  from = "/404"
-  to = "/"
-  status = 200
