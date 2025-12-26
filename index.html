@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Cody - Votre conseiller en orientation pour les métiers du numérique">
+    <title>Cody - Orientation Métiers du Numérique</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        * {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+        
+        .chat-message {
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .loading-dots span {
+            animation: bounce 1.4s infinite ease-in-out;
+        }
+        
+        .loading-dots span:nth-child(1) { animation-delay: -0.32s; }
+        .loading-dots span:nth-child(2) { animation-delay: -0.16s; }
+        
+        @keyframes bounce {
+            0%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-8px); }
+        }
+        
+        .sidebar-enter {
+            animation: slideInLeft 0.3s ease-out;
+        }
+        
+        @keyframes slideInLeft {
+            from {
+                transform: translateX(-100%);
+            }
+            to {
+                transform: translateX(0);
+            }
+        }
+        
+        /* Scrollbar personnalisée */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 antialiased">
+    <!-- Container principal -->
+    <div id="app" class="flex h-screen overflow-hidden">
+        
+        <!-- Sidebar - Base de connaissances -->
+        <aside id="sidebar" class="w-0 md:w-0 bg-white border-r border-gray-200 transition-all duration-300 ease-in-out overflow-hidden flex-shrink-0">
+            <div class="h-full flex flex-col">
+                <!-- Header sidebar -->
+                <div class="p-4 border-b border-gray-100 flex justify-between items-center bg-gradient-to-r from-cyan-50 to-blue-50">
+                    <div class="flex items-center gap-2">
+                        <svg class="w-5 h-5 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                        </svg>
+                        <h2 class="font-semibold text-gray-800 text-sm">Base de connaissances</h2>
+                    </div>
+                    <button onclick="toggleSidebar()" class="text-gray-400 hover:text-gray-600 transition-colors md:hidden">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+                
+                <!-- Upload zone -->
+                <div class="p-4 border-b border-gray-100">
+                    <label class="flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 text-white rounded-lg cursor-pointer hover:from-cyan-600 hover:to-blue-600 transition-all shadow-sm hover:shadow-md">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                        </svg>
+                        <span class="text-sm font-medium">Ajouter des PDF</span>
+                        <input type="file" multiple accept=".pdf,.txt" onchange="handleFiles(event)" class="hidden">
+                    </label>
+                    <p class="text-xs text-gray-500 mt-2 text-center">PDF et TXT uniquement</p>
+                </div>
+                
+                <!-- Liste des documents -->
+                <div id="docList" class="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar"></div>
+                
+                <!-- Stats -->
+                <div class="p-4 bg-gray-50 border-t border-gray-100">
+                    <div class="text-xs text-gray-600 text-center">
+                        <span id="docCount">0</span> document(s) chargé(s)
+                    </div>
+                </div>
+            </div>
+        </aside>
+        
+        <!-- Zone principale du chat -->
+        <main class="flex-1 flex flex-col min-w-0">
+            
+            <!-- Header -->
+            <header class="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between shadow-sm">
+                <div class="flex items-center gap-3">
+                    <!-- Logo placeholder - remplacez par votre logo -->
+                    <div class="w-10 h-10 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-md">
+                        C
+                    </div>
+                    <div>
+                        <h1 class="font-bold text-gray-900">Cody</h1>
+                        <p class="text-xs text-gray-500">Conseiller en orientation numérique</p>
+                    </div>
+                </div>
+                
+                <!-- Bouton documents -->
+                <button onclick="toggleSidebar()" class="flex items-center gap-2 px-3 py-2 bg-cyan-50 text-cyan-600 rounded-lg hover:bg-cyan-100 transition-colors text-sm font-medium">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    <span class="hidden sm:inline">Documents</span>
+                    <span class="bg-cyan-600 text-white text-xs font-semibold px-2 py-0.5 rounded-full" id="docCountBadge">0</span>
+                </button>
+            </header>
+            
+            <!-- Zone de messages -->
+            <div id="messages" class="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar bg-gradient-to-b from-gray-50 to-white">
+                <!-- Les messages apparaîtront ici -->
+            </div>
+            
+            <!-- Zone de saisie -->
+            <footer class="bg-white border-t border-gray-200 p-4">
+                <div class="max-w-4xl mx-auto">
+                    <div class="flex gap-2">
+                        <input 
+                            type="text" 
+                            id="userInput" 
+                            placeholder="Posez votre question..." 
+                            class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
+                            onkeypress="if(event.key==='Enter' && !event.shiftKey) { event.preventDefault(); sendMessage(); }"
+                        >
+                        <button 
+                            onclick="sendMessage()" 
+                            id="sendBtn"
+                            class="px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 text-white rounded-lg hover:from-cyan-600 hover:to-blue-600 transition-all shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+                            </svg>
+                        </button>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-2 text-center">Cody peut faire des erreurs. Vérifiez les informations importantes.</p>
+                </div>
+            </footer>
+            
+        </main>
+    </div>
+
+    <script>
+        // ============================================
+        // CONFIGURATION
+        // ============================================
+        
+        const CONFIG = {
+            API_ENDPOINT: '/.netlify/functions/chat',
+            MAX_FILE_SIZE: 5 * 1024 * 1024, // 5MB
+            SUPPORTED_TYPES: ['.pdf', '.txt'],
+        };
+        
+        // ============================================
+        // ÉTAT DE L'APPLICATION
+        // ============================================
+        
+        let state = {
+            messages: [],
+            documents: [],
+            isLoading: false,
+            sidebarOpen: false
+        };
+        
+        // ============================================
+        // PROMPT SYSTÈME INTELLIGENT
+        // ============================================
+        
+        const SYSTEM_PROMPT = `Tu es Cody, un assistant d'orientation professionnelle expert et bienveillant, spécialisé dans les métiers du numérique.
+
+🎯 TON RÔLE :
+Guider les utilisateurs vers les métiers du numérique qui leur correspondent, en adaptant ton accompagnement à leur profil.
+
+📋 WORKFLOW CONVERSATIONNEL (naturel et fluide) :
+
+1. ACCUEIL & IDENTIFICATION (1-2 messages)
+   - Accueille chaleureusement
+   - Identifie le profil : élève/étudiant, demandeur d'emploi, cadre en reconversion, autre
+   - Comprends le besoin : découverte générale ou conseil personnalisé
+
+2. EXPLORATION (2-4 messages selon besoin)
+   - Pose UNE question à la fois
+   - Creuse : niveau d'études, expérience, centres d'intérêt, compétences
+   - Adapte ton langage au profil (simple pour scolaires, professionnel pour cadres)
+
+3. CONSEIL & RECOMMANDATIONS (2-3 messages)
+   - Présente 2-3 métiers pertinents (utilise les documents si disponibles)
+   - Explique : missions, compétences requises, formations, perspectives
+   - Donne des exemples concrets et actuels
+
+4. CONCLUSION ADAPTÉE
+   - ✅ Si satisfait : félicite, récapitule, encourage
+   - 🤔 Si indécis : empathie, ressources externes (sites d'orientation, forums)
+   - ❓ Si flou : invite à revenir avec plus d'infos
+
+🎨 TON STYLE :
+- Bienveillant et encourageant
+- Clair et concret (pas de jargon inutile)
+- Conversationnel (tu/vous selon le profil)
+- Positif mais réaliste
+
+⚠️ RÈGLES STRICTES :
+- UNE question par message maximum
+- Pas de liste à puces sauf si demandé explicitement
+- Utilise les documents de la base de connaissances quand ils sont pertinents
+- Reste focus sur les métiers du numérique
+- Si hors sujet : rappelle poliment ta spécialité
+
+💡 EXEMPLES DE BONS DÉBUTS :
+- "Bonjour ! 👋 Je suis Cody, ton conseiller pour les métiers du numérique. Pour mieux t'accompagner, dis-moi : tu es plutôt élève/étudiant, en recherche d'emploi ou en reconversion ?"
+- "Super ! Et qu'est-ce qui t'attire dans le numérique ? L'informatique, le design, la data... ?"`;
+
+        // ============================================
+        // GESTION DE LA SIDEBAR
+        // ============================================
+        
+        function toggleSidebar() {
+            state.sidebarOpen = !state.sidebarOpen;
+            const sidebar = document.getElementById('sidebar');
+            
+            if (state.sidebarOpen) {
+                sidebar.classList.remove('w-0', 'md:w-0');
+                sidebar.classList.add('w-80', 'sidebar-enter');
+            } else {
+                sidebar.classList.remove('w-80', 'sidebar-enter');
+                sidebar.classList.add('w-0', 'md:w-0');
+            }
+        }
+        
+        // ============================================
+        // GESTION DES DOCUMENTS
+        // ============================================
+        
+        async function handleFiles(event) {
+            const files = Array.from(event.target.files);
+            
+            for (const file of files) {
+                // Vérifications
+                if (file.size > CONFIG.MAX_FILE_SIZE) {
+                    alert(`❌ Le fichier "${file.name}" est trop volumineux (max 5MB)`);
+                    continue;
+                }
+                
+                const ext = '.' + file.name.split('.').pop().toLowerCase();
+                if (!CONFIG.SUPPORTED_TYPES.includes(ext)) {
+                    alert(`❌ Type de fichier non supporté : ${ext}`);
+                    continue;
+                }
+                
+                // Lecture du fichier
+                try {
+                    const content = await readFileContent(file);
+                    state.documents.push({
+                        name: file.name,
+                        content: content,
+                        type: file.type,
+                        size: file.size,
+                        addedAt: new Date().toISOString()
+                    });
+                } catch (error) {
+                    console.error('Erreur lecture fichier:', error);
+                    alert(`❌ Erreur lors de la lecture de "${file.name}"`);
+                }
+            }
+            
+            updateDocList();
+            event.target.value = ''; // Reset input
+        }
+        
+        function readFileContent(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => resolve(e.target.result);
+                reader.onerror = (e) => reject(e);
+                reader.readAsText(file);
+            });
+        }
+        
+        function updateDocList() {
+            const count = state.documents.length;
+            document.getElementById('docCount').textContent = count;
+            document.getElementById('docCountBadge').textContent = count;
+            
+            const listEl = document.getElementById('docList');
+            
+            if (count === 0) {
+                listEl.innerHTML = `
+                    <div class="text-center text-gray-400 py-8">
+                        <svg class="w-12 h-12 mx-auto mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                        <p class="text-sm">Aucun document</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            listEl.innerHTML = state.documents.map((doc, i) => `
+                <div class="group flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors">
+                    <div class="flex items-center gap-2 flex-1 min-w-0">
+                        <svg class="w-4 h-4 text-cyan-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                        </svg>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm text-gray-700 truncate font-medium">${doc.name}</p>
+                            <p class="text-xs text-gray-500">${formatFileSize(doc.size)}</p>
+                        </div>
+                    </div>
+                    <button onclick="removeDocument(${i})" class="opacity-0 group-hover:opacity-100 text-red-500 hover:text-red-700 transition-all flex-shrink-0 ml-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                        </svg>
+                    </button>
+                </div>
+            `).join('');
+        }
+        
+        function removeDocument(index) {
+            if (confirm('Supprimer ce document ?')) {
+                state.documents.splice(index, 1);
+                updateDocList();
+            }
+        }
+        
+        function formatFileSize(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+        }
+        
+        // ============================================
+        // GESTION DES MESSAGES
+        // ============================================
+        
+        function addMessage(role, content) {
+            state.messages.push({ role, content });
+            renderMessages();
+        }
+        
+        function renderMessages() {
+            const container = document.getElementById('messages');
+            
+            container.innerHTML = state.messages.map(msg => {
+                const isUser = msg.role === 'user';
+                return `
+                    <div class="flex ${isUser ? 'justify-end' : 'justify-start'} chat-message">
+                        <div class="max-w-[85%] sm:max-w-[70%] ${isUser ? 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white' : 'bg-white text-gray-800 shadow-sm'} rounded-2xl px-4 py-3">
+                            <p class="text-sm sm:text-base whitespace-pre-wrap leading-relaxed">${escapeHtml(msg.content)}</p>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            // Scroll vers le bas
+            setTimeout(() => {
+                container.scrollTop = container.scrollHeight;
+            }, 100);
+        }
+        
+        function showLoading() {
+            const container = document.getElementById('messages');
+            const loadingDiv = document.createElement('div');
+            loadingDiv.id = 'loading-indicator';
+            loadingDiv.className = 'flex justify-start chat-message';
+            loadingDiv.innerHTML = `
+                <div class="bg-white rounded-2xl px-4 py-3 shadow-sm flex items-center gap-2">
+                    <div class="loading-dots flex gap-1">
+                        <span class="w-2 h-2 bg-cyan-600 rounded-full"></span>
+                        <span class="w-2 h-2 bg-cyan-600 rounded-full"></span>
+                        <span class="w-2 h-2 bg-cyan-600 rounded-full"></span>
+                    </div>
+                    <span class="text-sm text-gray-600 ml-2">Cody réfléchit...</span>
+                </div>
+            `;
+            container.appendChild(loadingDiv);
+            container.scrollTop = container.scrollHeight;
+        }
+        
+        function hideLoading() {
+            const loading = document.getElementById('loading-indicator');
+            if (loading) loading.remove();
+        }
+        
+        // ============================================
+        // ENVOI DE MESSAGE
+        // ============================================
+        
+        async function sendMessage() {
+            const input = document.getElementById('userInput');
+            const message = input.value.trim();
+            
+            if (!message || state.isLoading) return;
+            
+            // Désactive l'input
+            state.isLoading = true;
+            input.value = '';
+            input.disabled = true;
+            document.getElementById('sendBtn').disabled = true;
+            
+            // Ajoute le message utilisateur
+            addMessage('user', message);
+            showLoading();
+            
+            try {
+                // Prépare le contexte avec les documents
+                let knowledgeBase = '';
+                if (state.documents.length > 0) {
+                    knowledgeBase = '\n\n📚 DOCUMENTS DISPONIBLES DANS LA BASE DE CONNAISSANCES :\n\n';
+                    state.documents.forEach(doc => {
+                        // Limite à 2000 caractères par document pour éviter de saturer le contexte
+                        const excerpt = doc.content.substring(0, 2000);
+                        knowledgeBase += `--- ${doc.name} ---\n${excerpt}${doc.content.length > 2000 ? '\n...[contenu tronqué]' : ''}\n\n`;
+                    });
+                    knowledgeBase += '\n⚠️ Utilise ces documents pour enrichir tes réponses quand c\'est pertinent.\n';
+                }
+                
+                // Appel API
+                const response = await fetch(CONFIG.API_ENDPOINT, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        messages: state.messages,
+                        systemPrompt: SYSTEM_PROMPT + knowledgeBase
+                    })
+                });
+                
+                hideLoading();
+                
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.error || `Erreur ${response.status}`);
+                }
+                
+                const data = await response.json();
+                addMessage('assistant', data.response);
+                
+            } catch (error) {
+                hideLoading();
+                console.error('Erreur:', error);
+                addMessage('assistant', `❌ Désolé, une erreur s'est produite : ${error.message}\n\nMerci de réessayer dans un instant.`);
+            } finally {
+                // Réactive l'input
+                state.isLoading = false;
+                input.disabled = false;
+                document.getElementById('sendBtn').disabled = false;
+                input.focus();
+            }
+        }
+        
+        // ============================================
+        // UTILITAIRES
+        // ============================================
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        // ============================================
+        // INITIALISATION
+        // ============================================
+        
+        window.addEventListener('DOMContentLoaded', () => {
+            // Message de bienvenue
+            addMessage('assistant', `Bonjour ! 👋 Je suis Cody, votre conseiller en orientation pour les métiers du numérique.
+
+Je suis là pour vous aider à découvrir les opportunités professionnelles dans le secteur du numérique, que vous soyez élève, en recherche d'emploi ou en reconversion.
+
+Pour commencer, pouvez-vous me dire qui vous êtes ?
+• Un élève ou étudiant
+• Un demandeur d'emploi
+• Un professionnel en reconversion
+• Autre situation`);
+            
+            // Focus sur l'input
+            document.getElementById('userInput').focus();
+            
+            console.log('✅ Cody Chatbot initialisé');
+        });
+        
+    </script>
+</body>
+</html>
