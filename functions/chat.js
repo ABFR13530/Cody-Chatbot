@@ -1,7 +1,6 @@
 exports.handler = async (event) => {
   const headers = {
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type',
     'Content-Type': 'application/json'
   };
 
@@ -10,6 +9,17 @@ exports.handler = async (event) => {
   }
 
   try {
+    // Vérification de la clé API
+    if (!process.env.ANTHROPIC_API_KEY) {
+      return {
+        statusCode: 500,
+        headers,
+        body: JSON.stringify({ 
+          response: "❌ ERREUR : Clé API Anthropic non configurée dans Netlify.\n\nAllez dans Site configuration → Environment variables et ajoutez ANTHROPIC_API_KEY" 
+        })
+      };
+    }
+
     const { messages, systemPrompt } = JSON.parse(event.body);
     
     const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -28,6 +38,17 @@ exports.handler = async (event) => {
       })
     });
 
+    if (!response.ok) {
+      const errorText = await response.text();
+      return {
+        statusCode: 500,
+        headers,
+        body: JSON.stringify({ 
+          response: `❌ ERREUR API Anthropic (${response.status}):\n${errorText}\n\nVérifiez que votre clé API est valide sur console.anthropic.com` 
+        })
+      };
+    }
+
     const data = await response.json();
     
     return {
@@ -35,11 +56,14 @@ exports.handler = async (event) => {
       headers,
       body: JSON.stringify({ response: data.content[0].text })
     };
+
   } catch (error) {
     return {
       statusCode: 500,
       headers,
-      body: JSON.stringify({ error: 'Erreur serveur' })
+      body: JSON.stringify({ 
+        response: `❌ ERREUR TECHNIQUE:\n${error.message}\n\nStack: ${error.stack}` 
+      })
     };
   }
 };
