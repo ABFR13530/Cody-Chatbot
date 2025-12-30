@@ -17,8 +17,9 @@ exports.handler = async (event) => {
       parts: [{ text: m.content }]
     }));
 
+    // CORRECTION : Utiliser v1 au lieu de v1beta
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${process.env.GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -35,6 +36,7 @@ exports.handler = async (event) => {
 
     if (!response.ok) {
       const error = await response.text();
+      console.error('Erreur Gemini:', error);
       throw new Error(error);
     }
 
@@ -48,6 +50,7 @@ exports.handler = async (event) => {
     };
     
   } catch (error) {
+    console.error('Exception:', error);
     return {
       statusCode: 500,
       headers,
