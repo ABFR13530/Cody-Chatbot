@@ -1,4 +1,9 @@
 exports.handler = async (event) => {
+  // Log pour debug
+  console.log('=== FONCTION APPELÉE ===');
+  console.log('Clé API présente ?', !!process.env.ANTHROPIC_API_KEY);
+  console.log('Clé commence par sk-ant- ?', process.env.ANTHROPIC_API_KEY?.startsWith('sk-ant-'));
+  
   const headers = {
     'Access-Control-Allow-Origin': '*',
     'Content-Type': 'application/json'
@@ -8,19 +13,34 @@ exports.handler = async (event) => {
     return { statusCode: 200, headers, body: '' };
   }
 
-  try {
-    // Vérification de la clé API
-    if (!process.env.ANTHROPIC_API_KEY) {
-      return {
-        statusCode: 500,
-        headers,
-        body: JSON.stringify({ 
-          response: "❌ ERREUR : Clé API Anthropic non configurée dans Netlify.\n\nAllez dans Site configuration → Environment variables et ajoutez ANTHROPIC_API_KEY" 
-        })
-      };
-    }
+  // Test 1 : Clé existe ?
+  if (!process.env.ANTHROPIC_API_KEY) {
+    console.error('❌ PAS DE CLÉ API');
+    return {
+      statusCode: 500,
+      headers,
+      body: JSON.stringify({ 
+        error: 'Clé API non configurée dans Environment Variables de Netlify' 
+      })
+    };
+  }
+  
+  // Test 2 : Clé valide ?
+  if (!process.env.ANTHROPIC_API_KEY.startsWith('sk-ant-')) {
+    console.error('❌ CLÉ API INVALIDE');
+    return {
+      statusCode: 500,
+      headers,
+      body: JSON.stringify({ 
+        error: 'Format de clé API invalide (doit commencer par sk-ant-)' 
+      })
+    };
+  }
 
+  try {
     const { messages, systemPrompt } = JSON.parse(event.body);
+    
+    console.log('Appel API Anthropic...');
     
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -38,31 +58,37 @@ exports.handler = async (event) => {
       })
     });
 
+    console.log('Status API:', response.status);
+
     if (!response.ok) {
       const errorText = await response.text();
+      console.error('❌ ERREUR ANTHROPIC:', errorText);
       return {
-        statusCode: 500,
+        statusCode: response.status,
         headers,
         body: JSON.stringify({ 
-          response: `❌ ERREUR API Anthropic (${response.status}):\n${errorText}\n\nVérifiez que votre clé API est valide sur console.anthropic.com` 
+          error: `Erreur API Anthropic (${response.status}): ${errorText}` 
         })
       };
     }
 
     const data = await response.json();
+    console.log('✅ Réponse OK');
     
     return {
       statusCode: 200,
       headers,
       body: JSON.stringify({ response: data.content[0].text })
     };
-
+    
   } catch (error) {
+    console.error('❌ EXCEPTION:', error);
     return {
       statusCode: 500,
       headers,
       body: JSON.stringify({ 
-        response: `❌ ERREUR TECHNIQUE:\n${error.message}\n\nStack: ${error.stack}` 
+        error: `Exception: ${error.message}`,
+        stack: error.stack
       })
     };
   }
