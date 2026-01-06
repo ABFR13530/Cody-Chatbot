@@ -53,7 +53,6 @@
             }
         }
         
-        /* Scrollbar personnalisée */
         .custom-scrollbar::-webkit-scrollbar {
             width: 6px;
         }
@@ -73,13 +72,10 @@
     </style>
 </head>
 <body class="bg-gray-50 antialiased">
-    <!-- Container principal -->
     <div id="app" class="flex h-screen overflow-hidden">
         
-        <!-- Sidebar - Base de connaissances -->
         <aside id="sidebar" class="w-0 md:w-0 bg-white border-r border-gray-200 transition-all duration-300 ease-in-out overflow-hidden flex-shrink-0">
             <div class="h-full flex flex-col">
-                <!-- Header sidebar -->
                 <div class="p-4 border-b border-gray-100 flex justify-between items-center bg-gradient-to-r from-cyan-50 to-blue-50">
                     <div class="flex items-center gap-2">
                         <svg class="w-5 h-5 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -94,7 +90,6 @@
                     </button>
                 </div>
                 
-                <!-- Upload zone -->
                 <div class="p-4 border-b border-gray-100">
                     <label class="flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 text-white rounded-lg cursor-pointer hover:from-cyan-600 hover:to-blue-600 transition-all shadow-sm hover:shadow-md">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -106,10 +101,8 @@
                     <p class="text-xs text-gray-500 mt-2 text-center">PDF et TXT uniquement</p>
                 </div>
                 
-                <!-- Liste des documents -->
                 <div id="docList" class="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar"></div>
                 
-                <!-- Stats -->
                 <div class="p-4 bg-gray-50 border-t border-gray-100">
                     <div class="text-xs text-gray-600 text-center">
                         <span id="docCount">0</span> document(s) chargé(s)
@@ -118,13 +111,10 @@
             </div>
         </aside>
         
-        <!-- Zone principale du chat -->
         <main class="flex-1 flex flex-col min-w-0">
             
-            <!-- Header -->
             <header class="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between shadow-sm">
                 <div class="flex items-center gap-3">
-                    <!-- Logo placeholder - remplacez par votre logo -->
                     <div class="w-10 h-10 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-md">
                         C
                     </div>
@@ -134,7 +124,6 @@
                     </div>
                 </div>
                 
-                <!-- Bouton documents -->
                 <button onclick="toggleSidebar()" class="flex items-center gap-2 px-3 py-2 bg-cyan-50 text-cyan-600 rounded-lg hover:bg-cyan-100 transition-colors text-sm font-medium">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
@@ -144,12 +133,9 @@
                 </button>
             </header>
             
-            <!-- Zone de messages -->
             <div id="messages" class="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar bg-gradient-to-b from-gray-50 to-white">
-                <!-- Les messages apparaîtront ici -->
             </div>
             
-            <!-- Zone de saisie -->
             <footer class="bg-white border-t border-gray-200 p-4">
                 <div class="max-w-4xl mx-auto">
                     <div class="flex gap-2">
@@ -178,19 +164,11 @@
     </div>
 
     <script>
-        // ============================================
-        // CONFIGURATION
-        // ============================================
-        
         const CONFIG = {
             API_ENDPOINT: '/.netlify/functions/chat',
-            MAX_FILE_SIZE: 5 * 1024 * 1024, // 5MB
+            MAX_FILE_SIZE: 5 * 1024 * 1024,
             SUPPORTED_TYPES: ['.pdf', '.txt'],
         };
-        
-        // ============================================
-        // ÉTAT DE L'APPLICATION
-        // ============================================
         
         let state = {
             messages: [],
@@ -199,58 +177,172 @@
             sidebarOpen: false
         };
         
-        // ============================================
-        // PROMPT SYSTÈME INTELLIGENT
-        // ============================================
-        
-        const SYSTEM_PROMPT = `Tu es Cody, un assistant d'orientation professionnelle expert et bienveillant, spécialisé dans les métiers du numérique.
+        const SYSTEM_PROMPT = `Tu es Cody, assistant d'orientation pour les métiers du numérique.
 
-🎯 TON RÔLE :
-Guider les utilisateurs vers les métiers du numérique qui leur correspondent, en adaptant ton accompagnement à leur profil.
+⚠️ IMPORTANT : Tu dois suivre un WORKFLOW STRICT en 10 ÉTAPES. Ne saute AUCUNE étape.
 
-📋 WORKFLOW CONVERSATIONNEL (naturel et fluide) :
+📍 ÉTAT ACTUEL DE LA CONVERSATION :
+Tu dois analyser l'historique des messages pour savoir à quelle étape tu es, puis passer à la suivante.
 
-1. ACCUEIL & IDENTIFICATION (1-2 messages)
-   - Accueille chaleureusement
-   - Identifie le profil : élève/étudiant, demandeur d'emploi, cadre en reconversion, autre
-   - Comprends le besoin : découverte générale ou conseil personnalisé
+════════════════════════════════════════════════════════════
+ÉTAPE 1 : ACCUEIL ET ORIENTATION (1-2 messages)
+════════════════════════════════════════════════════════════
 
-2. EXPLORATION (2-4 messages selon besoin)
-   - Pose UNE question à la fois
-   - Creuse : niveau d'études, expérience, centres d'intérêt, compétences
-   - Adapte ton langage au profil (simple pour scolaires, professionnel pour cadres)
+🎯 OBJECTIF : Identifier le profil utilisateur
 
-3. CONSEIL & RECOMMANDATIONS (2-3 messages)
-   - Présente 2-3 métiers pertinents (utilise les documents si disponibles)
-   - Explique : missions, compétences requises, formations, perspectives
-   - Donne des exemples concrets et actuels
+📋 ACTIONS :
+1. Accueille chaleureusement
+2. Présente brièvement ton rôle (conseil sur métiers du numérique)
+3. Pose LA question clé : "Qui êtes-vous ?"
+   - Un élève ou étudiant
+   - Un demandeur d'emploi  
+   - Un professionnel en reconversion
+   - Autre situation
 
-4. CONCLUSION ADAPTÉE
-   - ✅ Si satisfait : félicite, récapitule, encourage
-   - 🤔 Si indécis : empathie, ressources externes (sites d'orientation, forums)
-   - ❓ Si flou : invite à revenir avec plus d'infos
+🚪 SORTIES POSSIBLES :
+- Si profil CLAIR → Passe à l'étape correspondante (3, 4 ou 5)
+- Si profil FLOU → Passe à ÉTAPE 2 (Clarification)
 
-🎨 TON STYLE :
-- Bienveillant et encourageant
-- Clair et concret (pas de jargon inutile)
-- Conversationnel (tu/vous selon le profil)
-- Positif mais réaliste
+════════════════════════════════════════════════════════════
+ÉTAPE 2 : CLARIFICATION DU BESOIN (2-3 messages)
+════════════════════════════════════════════════════════════
 
-⚠️ RÈGLES STRICTES :
-- UNE question par message maximum
-- Pas de liste à puces sauf si demandé explicitement
-- Utilise les documents de la base de connaissances quand ils sont pertinents
-- Reste focus sur les métiers du numérique
-- Si hors sujet : rappelle poliment ta spécialité
+🎯 OBJECTIF : Préciser le profil indéfini
 
-💡 EXEMPLES DE BONS DÉBUTS :
-- "Bonjour ! 👋 Je suis Cody, ton conseiller pour les métiers du numérique. Pour mieux t'accompagner, dis-moi : tu es plutôt élève/étudiant, en recherche d'emploi ou en reconversion ?"
-- "Super ! Et qu'est-ce qui t'attire dans le numérique ? L'informatique, le design, la data... ?"`;
+📋 ACTIONS :
+1. Demande des précisions : niveau d'études, expérience, motivation
+2. UNE question à la fois
+3. Reclassifie selon les réponses
 
-        // ============================================
-        // GESTION DE LA SIDEBAR
-        // ============================================
-        
+🚪 SORTIES :
+- Profil identifié → Passe à étape 3, 4 ou 5
+- Toujours flou → Passe à ÉTAPE 10 (Conclusion besoin non identifié)
+
+════════════════════════════════════════════════════════════
+ÉTAPE 3 : ACCOMPAGNEMENT PROFIL SCOLAIRE (1 message)
+════════════════════════════════════════════════════════════
+
+🎯 OBJECTIF : Orienter l'élève/étudiant
+
+📋 ACTIONS :
+Demande explicitement : "Que préfères-tu ?"
+- Une découverte GÉNÉRALE des métiers du numérique
+- Un conseil PERSONNALISÉ selon tes intérêts
+
+🚪 SORTIES :
+- Découverte générale → ÉTAPE 6 (Présentation métiers)
+- Conseil personnalisé → ÉTAPE 7 (Conseil personnalisé)
+
+════════════════════════════════════════════════════════════
+ÉTAPE 4 : ACCOMPAGNEMENT DEMANDEUR D'EMPLOI (1 message)
+════════════════════════════════════════════════════════════
+
+🎯 OBJECTIF : Aider à repérer les métiers accessibles
+
+📋 ACTIONS :
+Demande : "Que recherches-tu ?"
+- Une LISTE de métiers porteurs
+- Un ACCOMPAGNEMENT personnalisé selon ton expérience
+
+🚪 SORTIES :
+- Liste métiers → ÉTAPE 6 (Présentation métiers)
+- Accompagnement perso → ÉTAPE 7 (Conseil personnalisé)
+
+════════════════════════════════════════════════════════════
+ÉTAPE 5 : ACCOMPAGNEMENT CADRE EN RECONVERSION (1 message)
+════════════════════════════════════════════════════════════
+
+🎯 OBJECTIF : Accompagner la reconversion
+
+📋 ACTIONS :
+Demande : "Que souhaites-tu ?"
+- Un PANORAMA des métiers ouverts à la reconversion
+- Une ANALYSE personnalisée de ta situation
+
+🚪 SORTIES :
+- Panorama → ÉTAPE 6 (Présentation métiers)
+- Analyse perso → ÉTAPE 7 (Conseil personnalisé)
+
+════════════════════════════════════════════════════════════
+ÉTAPE 6 : PRÉSENTATION DES MÉTIERS (2-4 messages)
+════════════════════════════════════════════════════════════
+
+🎯 OBJECTIF : Vue d'ensemble des métiers du numérique
+
+📋 ACTIONS :
+1. Présente 3-5 métiers adaptés au profil :
+   - Développeur web/mobile
+   - Data scientist / IA
+   - Cybersécurité
+   - Designer UX/UI
+   - DevOps / Cloud
+2. Pour chaque métier : missions, compétences, perspectives
+3. Utilise les DOCUMENTS de la base de connaissances si disponibles
+
+🚪 SORTIES :
+- Utilisateur veut approfondir → ÉTAPE 7 (Conseil personnalisé)
+- Utilisateur satisfait → ÉTAPE 8 (Conclusion positive)
+
+════════════════════════════════════════════════════════════
+ÉTAPE 7 : CONSEIL PERSONNALISÉ (3-5 messages)
+════════════════════════════════════════════════════════════
+
+🎯 OBJECTIF : Recommandations sur-mesure
+
+📋 ACTIONS :
+1. Pose 2-3 questions sur : intérêts, compétences actuelles, objectifs
+2. Analyse et recommande 1-2 métiers PRÉCIS
+3. Donne : formations recommandées, ressources, premiers pas
+4. Utilise la base de connaissances
+
+🚪 SORTIES :
+- Utilisateur orienté et satisfait → ÉTAPE 8 (Conclusion positive)
+- Utilisateur indécis/difficulté → ÉTAPE 9 (Conclusion indécision)
+
+════════════════════════════════════════════════════════════
+ÉTAPE 8 : CONCLUSION POSITIVE
+════════════════════════════════════════════════════════════
+
+🎯 Félicite le cheminement
+📋 Récapitule les métiers/ressources recommandés
+💪 Encourage à poursuivre
+📞 Rappelle qu'il peut revenir
+
+════════════════════════════════════════════════════════════
+ÉTAPE 9 : CONCLUSION EN CAS D'INDÉCISION
+════════════════════════════════════════════════════════════
+
+🎯 Exprime empathie
+📋 Propose ressources externes :
+   - Pôle Emploi / France Travail
+   - Grande École du Numérique
+   - Forums orientation
+📞 Invite à revenir ultérieurement
+
+════════════════════════════════════════════════════════════
+ÉTAPE 10 : CONCLUSION BESOIN NON IDENTIFIÉ
+════════════════════════════════════════════════════════════
+
+🎯 Signale manque d'info
+📋 Explique pourquoi tu ne peux pas conseiller efficacement
+📞 Invite à revenir avec plus de précisions
+
+════════════════════════════════════════════════════════════
+🎨 TON STYLE
+════════════════════════════════════════════════════════════
+
+✅ Bienveillant et professionnel
+✅ UNE question par message maximum (sauf présentation métiers)
+✅ Langage adapté au profil (simple pour scolaires, pro pour cadres)
+✅ Pas de liste à puces sauf étape 6
+✅ Toujours indiquer où tu en es dans le processus
+
+════════════════════════════════════════════════════════════
+⚠️ RÈGLE ABSOLUE
+════════════════════════════════════════════════════════════
+
+RESPECTE L'ORDRE DES ÉTAPES. Ne passe à l'étape suivante que quand l'actuelle est validée par l'utilisateur.`;
+
         function toggleSidebar() {
             state.sidebarOpen = !state.sidebarOpen;
             const sidebar = document.getElementById('sidebar');
@@ -264,15 +356,10 @@ Guider les utilisateurs vers les métiers du numérique qui leur correspondent, 
             }
         }
         
-        // ============================================
-        // GESTION DES DOCUMENTS
-        // ============================================
-        
         async function handleFiles(event) {
             const files = Array.from(event.target.files);
             
             for (const file of files) {
-                // Vérifications
                 if (file.size > CONFIG.MAX_FILE_SIZE) {
                     alert(`❌ Le fichier "${file.name}" est trop volumineux (max 5MB)`);
                     continue;
@@ -284,7 +371,6 @@ Guider les utilisateurs vers les métiers du numérique qui leur correspondent, 
                     continue;
                 }
                 
-                // Lecture du fichier
                 try {
                     const content = await readFileContent(file);
                     state.documents.push({
@@ -301,7 +387,7 @@ Guider les utilisateurs vers les métiers du numérique qui leur correspondent, 
             }
             
             updateDocList();
-            event.target.value = ''; // Reset input
+            event.target.value = '';
         }
         
         function readFileContent(file) {
@@ -365,10 +451,6 @@ Guider les utilisateurs vers les métiers du numérique qui leur correspondent, 
             return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
         }
         
-        // ============================================
-        // GESTION DES MESSAGES
-        // ============================================
-        
         function addMessage(role, content) {
             state.messages.push({ role, content });
             renderMessages();
@@ -388,7 +470,6 @@ Guider les utilisateurs vers les métiers du numérique qui leur correspondent, 
                 `;
             }).join('');
             
-            // Scroll vers le bas
             setTimeout(() => {
                 container.scrollTop = container.scrollHeight;
             }, 100);
@@ -418,40 +499,31 @@ Guider les utilisateurs vers les métiers du numérique qui leur correspondent, 
             if (loading) loading.remove();
         }
         
-        // ============================================
-        // ENVOI DE MESSAGE
-        // ============================================
-        
         async function sendMessage() {
             const input = document.getElementById('userInput');
             const message = input.value.trim();
             
             if (!message || state.isLoading) return;
             
-            // Désactive l'input
             state.isLoading = true;
             input.value = '';
             input.disabled = true;
             document.getElementById('sendBtn').disabled = true;
             
-            // Ajoute le message utilisateur
             addMessage('user', message);
             showLoading();
             
             try {
-                // Prépare le contexte avec les documents
                 let knowledgeBase = '';
                 if (state.documents.length > 0) {
                     knowledgeBase = '\n\n📚 DOCUMENTS DISPONIBLES DANS LA BASE DE CONNAISSANCES :\n\n';
                     state.documents.forEach(doc => {
-                        // Limite à 2000 caractères par document pour éviter de saturer le contexte
                         const excerpt = doc.content.substring(0, 2000);
                         knowledgeBase += `--- ${doc.name} ---\n${excerpt}${doc.content.length > 2000 ? '\n...[contenu tronqué]' : ''}\n\n`;
                     });
                     knowledgeBase += '\n⚠️ Utilise ces documents pour enrichir tes réponses quand c\'est pertinent.\n';
                 }
                 
-                // Appel API
                 const response = await fetch(CONFIG.API_ENDPOINT, {
                     method: 'POST',
                     headers: {
@@ -465,12 +537,12 @@ Guider les utilisateurs vers les métiers du numérique qui leur correspondent, 
                 
                 hideLoading();
                 
+                const data = await response.json();
+                
                 if (!response.ok) {
-                    const errorData = await response.json().catch(() => ({}));
-                    throw new Error(errorData.error || `Erreur ${response.status}`);
+                    throw new Error(JSON.stringify(data, null, 2));
                 }
                 
-                const data = await response.json();
                 addMessage('assistant', data.response);
                 
             } catch (error) {
@@ -478,7 +550,6 @@ Guider les utilisateurs vers les métiers du numérique qui leur correspondent, 
                 console.error('Erreur:', error);
                 addMessage('assistant', `❌ Désolé, une erreur s'est produite : ${error.message}\n\nMerci de réessayer dans un instant.`);
             } finally {
-                // Réactive l'input
                 state.isLoading = false;
                 input.disabled = false;
                 document.getElementById('sendBtn').disabled = false;
@@ -486,22 +557,13 @@ Guider les utilisateurs vers les métiers du numérique qui leur correspondent, 
             }
         }
         
-        // ============================================
-        // UTILITAIRES
-        // ============================================
-        
         function escapeHtml(text) {
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
         }
         
-        // ============================================
-        // INITIALISATION
-        // ============================================
-        
         window.addEventListener('DOMContentLoaded', () => {
-            // Message de bienvenue
             addMessage('assistant', `Bonjour ! 👋 Je suis Cody, votre conseiller en orientation pour les métiers du numérique.
 
 Je suis là pour vous aider à découvrir les opportunités professionnelles dans le secteur du numérique, que vous soyez élève, en recherche d'emploi ou en reconversion.
@@ -512,10 +574,8 @@ Pour commencer, pouvez-vous me dire qui vous êtes ?
 • Un professionnel en reconversion
 • Autre situation`);
             
-            // Focus sur l'input
             document.getElementById('userInput').focus();
-            
-            console.log('✅ Cody Chatbot initialisé');
+            console.log('✅ Cody Chatbot initialisé avec workflow Voiceflow');
         });
         
     </script>
